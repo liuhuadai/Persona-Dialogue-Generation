@@ -1,0 +1,34 @@
+<html>
+<head>
+<title>Chat Room</title>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.min.js"></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+</head>
+<body>
+<script type="text/javascript">
+$(document).ready(function() {
+
+	var socket = io.connect('http://127.0.0.1:5000');
+
+	socket.on('connect', function() {
+		socket.send('User has connected!');
+	});
+
+	socket.on('message', function(msg) {
+		$("#messages").append('<li>'+msg+'</li>');
+		console.log('Received message');
+	});
+	$('#sendbutton').on('click', function() {
+		$("#messages").append('<li>'+'interluctorA: '+$('#myMessage').val()+'</li>');
+		socket.send($('#myMessage').val());
+		$('#myMessage').val('');
+	});
+
+});
+</script>
+<ul id="messages"></ul>
+<textarea rows="3" cols="40" type="text" id="myMessage"></textarea>
+<button id="sendbutton">Send</button>
+(input "[DONE]" to change persona!)
+</body>
+</html>
