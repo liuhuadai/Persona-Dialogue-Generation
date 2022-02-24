@@ -90,9 +90,9 @@ def build_data(data_file):
 
 
 if __name__ == '__main__':
-    build_data("data\\ConvAI2\\train_both_original.txt")
-    build_data("data\\ConvAI2\\valid_both_original.txt")
-    build_data("data\\ConvAI2\\train_both_revised.txt")
-    build_data("data\\ConvAI2\\valid_both_revised.txt")
+    build_data("data/ConvAI2/train_both_original.txt")
+    build_data("data/ConvAI2/valid_both_original.txt")
+    build_data("data/ConvAI2/train_both_revised.txt")
+    build_data("data/ConvAI2/valid_both_revised.txt")
 
 
