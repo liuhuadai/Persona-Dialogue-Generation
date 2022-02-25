@@ -168,7 +168,10 @@ class Gpt2SeqModel(nn.Module):
 
                         # concat them into one
                         cand_inp_seq = torch.cat([cand_src_seq, cand_start, current_cs], dim=1).contiguous()
-                        cand_logits, hidden_states = self.transformer_module(cand_inp_seq)
+                        outputs = self.transformer_module(cand_inp_seq, output_hidden_states=True)
+                        cand_logits, hidden_states = outputs.logits, outputs.hidden_states
+                        hidden_states = hidden_states[-1]
+                        # cand_logits, hidden_states = self.transformer_module(cand_inp_seq)
                         # view as batch_size x cand_size
                         # TODO: note the candidate doesn't own a END symbol,
                         #  so we ignore the score form last word -> EOS and EOS -> pad
@@ -209,7 +212,10 @@ class Gpt2SeqModel(nn.Module):
         past_dis = prior_dis
         with torch.no_grad():
             for step in range(self.longest_label):
-                logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+                # logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+                outputs = self.transformer_module(past_input, None, past_dis, output_hidden_states=True)
+                logits, hidden_states = outputs.logits, outputs.hidden_states
+                hidden_states = hidden_states[-1]
                 # logits, _ = self.transformer_module.forward(past)
                 logits = logits[:, -1, :] / self.temperature
                 log_probs = F.log_softmax(logits, dim=-1)
@@ -275,7 +281,10 @@ class Gpt2SeqModel(nn.Module):
         src_len = prior_context.size(1) - 1
         last_logits = None
         for step in range(self.longest_label):
-            logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            # logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            outputs = self.transformer_module(past_input, None, past_dis, output_hidden_states=True)
+            logits, hidden_states = outputs.logits, outputs.hidden_states
+            hidden_states = hidden_states[-1]
             last_logits= logits
             # logits, _ = self.transformer_module.forward(past)
             logits = logits[:, -1, :] / self.temperature
@@ -344,7 +353,10 @@ class Gpt2SeqModel(nn.Module):
         src_len = prior_context.size(1) - 1
         last_logits = None
         for step in range(self.longest_label):
-            logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            # logits, hidden_states = self.transformer_module.forward(past_input, None, past_dis)
+            outputs = self.transformer_module(past_input, None, past_dis, output_hidden_states=True)
+            logits, hidden_states = outputs.logits, outputs.hidden_states
+            hidden_states = hidden_states[-1]
             last_logits= logits
             # logits, _ = self.transformer_module.forward(past)
             logits = logits[:, -1, :] / self.temperature
@@ -420,7 +432,11 @@ class Gpt2SeqModel(nn.Module):
             start_token_tensor = prior_context.repeat(1, self.beam_size).view(batch_size * self.beam_size, -1)
             token_tensor = start_token_tensor
             for step in range(self.longest_label):
-                outputs, hidden_states = self.transformer_module.forward(token_tensor)
+                # outputs, hidden_states = self.transformer_module.forward(token_tensor)
+                outputs = self.transformer_module(token_tensor, output_hidden_states=True)
+                logits, hidden_states = outputs.logits, outputs.hidden_states
+                hidden_states = hidden_states[-1]
+                outputs = logits
 
                 logits = outputs[:, -1, :]
                 log_probs = F.log_softmax(logits, dim=-1)
@@ -559,7 +575,10 @@ class Gpt2SeqModel(nn.Module):
         all_tokens = all_tokens.view(batch_size * turn_size, sen_size)
         # TODO: manually construct the position ids for input & output
         with torch.no_grad():
-            lm_logits, hidden_states = self.transformer_module.forward(all_tokens)
+            # lm_logits, hidden_states = self.transformer_module.forward(all_tokens)
+            outputs = self.transformer_module(all_tokens, output_hidden_states=True)
+            lm_logits, hidden_states = outputs.logits, outputs.hidden_states
+            hidden_states = hidden_states[-1]
             send_len = prev_len + send_tokens.ne(self.pad_idx).sum(dim=2, keepdim=True).view(batch_size * turn_size, -1)
             send_len_expand = send_len.unsqueeze(dim=2).repeat(1, 1, 768)
             # lm labels should mask the source sentence language model
