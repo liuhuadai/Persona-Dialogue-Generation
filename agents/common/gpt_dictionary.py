@@ -6,7 +6,7 @@
 from parlai.core.dict import DictionaryAgent
 import torch
 try:
-    from pytorch_pretrained_bert import OpenAIGPTTokenizer
+    from transformers import OpenAIGPTTokenizer
 except ImportError:
     raise ImportError('please ensure that pytorch-pretrained-BERT installed. \n '
                       'pip install pytorch-pretrained-bert')
@@ -59,8 +59,8 @@ class GPTDictionaryAgent(DictionaryAgent):
 
         # add special token after the pre-trained bpe text
         self.tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt',
-                                                            cache_dir=cache_vocab_dir,
-                                                            special_tokens=self.special_tokens)
+                                                            cache_dir=cache_vocab_dir)
+        self.tokenizer.add_tokens(self.special_tokens)
 
         self.start_token = self.default_start
         self.end_token = self.default_end

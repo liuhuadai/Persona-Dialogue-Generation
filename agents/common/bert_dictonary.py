@@ -6,7 +6,7 @@
 from parlai.core.dict import DictionaryAgent
 from parlai.zoo.bert.build import download
 try:
-    from pytorch_pretrained_bert import BertTokenizer
+    from transformers import BertTokenizer
 except ImportError:
     raise ImportError('BERT rankers needs pytorch-pretrained-BERT installed. \n '
                       'pip install pytorch-pretrained-bert')

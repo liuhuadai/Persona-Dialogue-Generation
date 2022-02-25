@@ -97,7 +97,7 @@ def gpt2_args(agent_args):
     agent_args.add_argument('--lr_schedule', type=str, default='warmup_linear')
     agent_args.add_argument('--weight_decay', type=float, default=0.01)
     agent_args.add_argument('--lm_coef', type=float, default=0.9)
-    agent_args.add_argument('--num_train_epochs', type=int, default=3)
+    agent_args.add_argument('--num_train_epochs', type=int, default=4)
     # default size for num_train_epochs
     agent_args.add_argument('--train_size', type=int, default=130824)
     agent_args.add_argument('--optimizer_step', type=int, default=5000)

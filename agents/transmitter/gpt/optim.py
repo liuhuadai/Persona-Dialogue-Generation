@@ -1,4 +1,8 @@
-from pytorch_pretrained_bert import OpenAIAdam
+# from transformers import OpenAIAdam
+# from sched import scheduler
+from transformers import AdamW, get_linear_schedule_with_warmup
+import torch
+# from agents.transmitter.utils import _ellipse
 from parlai.core.utils import _ellipse
 
 
@@ -42,12 +46,19 @@ class GPTOptimizer:
         print('The following parameters will be optimized NORMALLY:')
         print(_ellipse(base_parameters_names, 5, ' , '))
 
-        optimizer = OpenAIAdam(optimizer_grouped_parameters,
-                               lr=opt['gpt_lr'],
-                               warmup=opt['warmup_proportion'],
-                               max_grad_norm=opt['gradient_clip'],
-                               t_total=opt.get('optimizer_step', -1))
+        # optimizer = OpenAIAdam(optimizer_grouped_parameters,
+        #                        lr=opt['gpt_lr'],
+        #                        warmup=opt['warmup_proportion'],
+        #                        max_grad_norm=opt['gradient_clip'],
+        #                        t_total=opt.get('optimizer_step', -1))
+        optimizer = AdamW(optimizer_grouped_parameters,
+                          lr=opt['gpt_lr'])
+        t_total = opt.get('optimizer_step', -1)
+        warmup = int(opt['warmup_proportion'] * t_total)
+        scheduler = get_linear_schedule_with_warmup(optimizer, warmup, t_total)
+        self.max_grad_norm = opt['gradient_clip']
         self.optimizer = optimizer
+        self.scheduler = scheduler
 
     def state_dict(self):
         return {'optimizer': self.optimizer.state_dict()}
@@ -61,6 +72,16 @@ class GPTOptimizer:
     @property
     def param_groups(self):
         return self.optimizer.param_groups
+    
+    @property
+    def params(self):
+        for group in self.param_groups:
+            for p in group['params']:
+                yield p
 
     def step(self):
+        # print(self.param_groups[0].keys())
+        # print(len(self.param_groups))
+        torch.nn.utils.clip_grad_norm_(self.params, self.max_grad_norm)
         self.optimizer.step()
+        self.scheduler.step()

@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from pytorch_pretrained_bert import OpenAIGPTLMHeadModel
+from transformers import OpenAIGPTLMHeadModel
 
 
 class Gpt2SeqModel(nn.Module):
@@ -23,9 +23,14 @@ class Gpt2SeqModel(nn.Module):
         # the remaining 30 is the distance size
         special_token_len += 30
         self.vocab_size += 29
+        # print('vocab size:', self.vocab_size, special_token_len)
         # regard input and output as one sentence, given the input as context, generate the next sentence.
-        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt',
-                                                                       num_special_tokens=special_token_len)
+        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
+        self.transformer_module.resize_token_embeddings(self.vocab_size)
+        if self.training:
+            self.transformer_module.train()
+        else:
+            self.transformer_module.eval()
         self.pad_idx = pad_idx
         self.start_idx = start_idx
         self.end_idx = end_idx
@@ -88,7 +93,11 @@ class Gpt2SeqModel(nn.Module):
                 dis_seq = torch.tensor(token_type_ids, device=input_seq.device, dtype=torch.long)
             else:
                 dis_seq = None
-            lm_logits, hidden_states = self.transformer_module(input_seq, None, dis_seq)
+            # lm_logits, hidden_states = self.transformer_module(input_seq, None, dis_seq)
+            outputs = self.transformer_module(input_seq, None, dis_seq, output_hidden_states=True)
+            lm_logits, hidden_states = outputs.logits, outputs.hidden_states
+            # print('Hidden_states:', len(hidden_states))
+            hidden_states = hidden_states[-1]
             # lm labels should mask the source sentence language model
             shift_logits = lm_logits[..., src_seq_len:-1, :].contiguous()
             # lm_labels = tgt_seq.clone()[..., 1:].contiguous()
@@ -134,7 +143,9 @@ class Gpt2SeqModel(nn.Module):
 
             cand_seq = torch.cat([src_seq, start_tensor, sampling_seq], dim=1)
             # TODO: manually construct the position ids for input & output
-            sampling_logits, hidden_states = self.transformer_module(cand_seq, None, None)
+            outputs = self.transformer_module(cand_seq, None, None, output_hidden_states=True)
+            sampling_logits, hidden_states = outputs.logits, outputs.hidden_states
+            hidden_states = hidden_states[-1]
             # lm labels should mask the source sentence language model
             last_state = hidden_states.gather(dim=1, index=sampling_seq_len_expand).squeeze(dim=1)
             negative_score = self.linear(self.dropout(last_state))
