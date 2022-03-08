@@ -4,7 +4,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from transformers import OpenAIGPTLMHeadModel
+from transformers import OpenAIGPTLMHeadModel, GPT2LMHeadModel
 
 
 class Gpt2SeqModel(nn.Module):
@@ -25,7 +25,13 @@ class Gpt2SeqModel(nn.Module):
         self.vocab_size += 29
         # print('vocab size:', self.vocab_size, special_token_len)
         # regard input and output as one sentence, given the input as context, generate the next sentence.
-        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
+        gpt_type = opt.get('gpt_type', 'gpt')
+        print('GPT_MODEL_TYPE:', gpt_type)
+        if gpt_type == 'gpt':
+            self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
+        elif gpt_type == 'gpt2':
+            self.vocab_size += (50257 - 40478)
+            self.transformer_module = GPT2LMHeadModel.from_pretrained('gpt2')
         self.transformer_module.resize_token_embeddings(self.vocab_size)
         if self.training:
             self.transformer_module.train()

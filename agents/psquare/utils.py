@@ -4,7 +4,7 @@ from agents.common.dict_helper import SpecialToken
 import torch.nn.functional as F
 from agents.transmitter.transmitter import Gpt2SeqModel
 import numpy as np
-from pytorch_pretrained_bert import OpenAIGPTLMHeadModel
+from transformers import OpenAIGPTLMHeadModel, GPT2LMHeadModel
 
 
 def _length_penalty(sequence_lengths):
@@ -15,8 +15,13 @@ def _length_penalty(sequence_lengths):
 
 
 class LanguageModel(object):
-    def __init__(self, pad_idx):
-        self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
+    def __init__(self, pad_idx, gpt_type='gpt'):
+        if gpt_type == 'gpt':
+            self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
+        elif gpt_type == 'gpt2':
+            self.transformer_module = GPT2LMHeadModel.from_pretrained('gpt2')
+        else:
+            raise ValueError('gpt_type should be gpt or gpt2')
         self.transformer_module.eval()
         self.pad_idx = pad_idx
 
@@ -26,7 +31,10 @@ class LanguageModel(object):
         golden_out = generate_tokens[:, 1:].unsqueeze(dim=2)
         # TODO: manually construct the position ids for input & output
         with torch.no_grad():
-            lm_logits, all_states = self.transformer_module(generate_tokens)
+            # lm_logits, all_states = self.transformer_module(generate_tokens)
+            # print('GTS:', generate_tokens)
+            outputs = self.transformer_module(generate_tokens)
+            lm_logits = outputs.logits
             # lm labels should mask the source sentence language model
             shift_logits = lm_logits[..., :-1, :].contiguous()
             # lm_labels = tgt_seq.clone()[..., 1:].contiguous()

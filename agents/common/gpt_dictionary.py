@@ -6,7 +6,7 @@
 from parlai.core.dict import DictionaryAgent
 import torch
 try:
-    from transformers import OpenAIGPTTokenizer
+    from transformers import OpenAIGPTTokenizer, GPT2Tokenizer
 except ImportError:
     raise ImportError('please ensure that pytorch-pretrained-BERT installed. \n '
                       'pip install pytorch-pretrained-bert')
@@ -40,7 +40,7 @@ class GPTDictionaryAgent(DictionaryAgent):
     default_start = SpecialToken.start
     default_end = SpecialToken.end
     default_unk = SpecialToken.unk
-    default_tok = 'bpe'
+    default_tok = 'gpt'
     default_lower = True
     default_textfields = 'text,labels'
 
@@ -58,8 +58,17 @@ class GPTDictionaryAgent(DictionaryAgent):
                                SpecialToken.slice_sym]
 
         # add special token after the pre-trained bpe text
-        self.tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt',
+        gpt_type = opt.get('gpt_type', 'gpt')
+        print('GPT_TOKEN_TYPE: {}'.format(gpt_type))
+        if gpt_type == 'gpt':
+            self.tokenizer = OpenAIGPTTokenizer.from_pretrained('openai-gpt',
                                                             cache_dir=cache_vocab_dir)
+        elif gpt_type == 'gpt2':
+            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2',
+                                                            cache_dir=cache_vocab_dir)
+            # self.default_tok = 'gpt2'
+        else:
+            raise ValueError('gpt_type should be gpt or gpt2')
         self.tokenizer.add_tokens(self.special_tokens)
 
         self.start_token = self.default_start
@@ -73,6 +82,7 @@ class GPTDictionaryAgent(DictionaryAgent):
         self.end_idx = self.tokenizer.convert_tokens_to_ids([SpecialToken.end])[0]
         self.pad_idx = self.tokenizer.convert_tokens_to_ids([SpecialToken.pad])[0]  # should be 0
         # update for default tokenizer vocabulary
+        print('INDS', self.start_idx, self.end_idx, self.pad_idx)
         self.tok2ind.clear()
         self.ind2tok.clear()
 
@@ -98,4 +108,6 @@ class GPTDictionaryAgent(DictionaryAgent):
         toks = self.tokenizer.convert_ids_to_tokens(idxs)
         if recover_bpe:
             toks = recover_bpe_encoding(toks)
-        return ' '.join(toks)
+            return ' '.join(toks)
+        else:
+            return self.tokenizer.decode(idxs)

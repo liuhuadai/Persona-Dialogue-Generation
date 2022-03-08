@@ -423,7 +423,11 @@ class TransformerAgent(Agent):
         vocab_size = len(self.dict.tok2ind.items())
 
         if opt['smoothing'] > 0.0:
-            self.criterion = LabelSmoothingLoss(vocabulary_size=40516,
+            vs = {
+                'gpt': 40516,
+                'gpt2': 50295,
+            }.get(opt.get('gpt_type', 'gpt'), None)
+            self.criterion = LabelSmoothingLoss(vocabulary_size=vs,
                                                 label_smoothing=opt['smoothing'],
                                                 pad_index=self.NULL_IDX)
         else:

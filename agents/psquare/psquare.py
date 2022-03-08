@@ -3,6 +3,7 @@ import os
 import pickle
 from collections import deque, defaultdict
 from copy import deepcopy
+from timeit import repeat
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -23,6 +24,7 @@ from agents.transmitter.gpt.optim import GPTOptimizer
 from torch import autograd
 import json
 from agents.psquare.utils import LanguageModel
+from itertools import repeat
 
 task_key_word = 'OriginalPersonaTeacher'
 
@@ -35,6 +37,11 @@ def _setup_op(opt, component):
             new_k = k[:-len(component) - 1]
             new_opt[new_k] = v
     return new_opt
+
+def _replace_all(tokens, message):
+    for i, j in zip(tokens, repeat('')):
+        message = message.replace(i, j)
+    return message
 
 
 def _init_receiver(opt):
@@ -430,7 +437,7 @@ class PSquareAgent(Agent):
                 self.coherent_model.load_state_dict(language_status['model'])
                 self.coherent_model.eval()
 
-            self.language_model = LanguageModel(pad_idx=self.NULL_IDX)
+            self.language_model = LanguageModel(pad_idx=self.NULL_IDX, gpt_type=opt.get('gpt_type', 'gpt'))
 
             if transmitter_status:
                 self.transmitter.load_state_dict(transmitter_status['model'])
@@ -927,9 +934,9 @@ class PSquareAgent(Agent):
         receive_messages = deepcopy(self.receive_messages)
 
         # remove the <end> from message for later robust splitting
-        receive_messages = [[message.replace(self.dict.end_token, '') for message in interaction]
+        receive_messages = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
                             for interaction in receive_messages]
-        send_messages = [[message.replace(self.dict.end_token, '') for message in interaction]
+        send_messages = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
                          for interaction in send_messages]
 
         is_first_speaker = self.is_first_speaker
@@ -964,9 +971,9 @@ class PSquareAgent(Agent):
         send_messages_list = deepcopy(self.send_messages)
 
         # remove the <end> from message for later robust splitting
-        receive_messages_list = [[message.replace(self.dict.end_token, '') for message in interaction]
+        receive_messages_list = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
                                  for interaction in receive_messages_list]
-        send_messages_list = [[message.replace(self.dict.end_token, '') for message in interaction]
+        send_messages_list = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
                               for interaction in send_messages_list]
 
         if self.is_first_speaker:
@@ -1009,8 +1016,14 @@ class PSquareAgent(Agent):
         if self.use_cuda:
             receive_tensor = receive_tensor.cuda(cuda_device)
             send_tensor = send_tensor.cuda(cuda_device)
-
-        sorted_score = self.coherent_model.score_sentence(receive_tensor, send_tensor)
+        try:
+            sorted_score = self.coherent_model.score_sentence(receive_tensor, send_tensor)
+        except Exception as e:
+            print('_' * 20)
+            print(self.receive_messages)
+            print('_' * 20)
+            print(self.send_messages)
+            raise e
         # desorted ind
         desorted_ind = np.array(sort_ind).argsort()
         scores = sorted_score[desorted_ind]
@@ -1024,7 +1037,18 @@ class PSquareAgent(Agent):
         :return:
         """
         send_messages = deepcopy(self.send_messages)
-        send_messages = [[message.replace(self.dict.end_token, '') for message in interaction]
+        # send_messages = [
+        #     ["good.. i've been thinking about this <t1end>  what is your dream job?", 
+        #     "i'm fine. just got done at the club."], 
+        #     ["i'm ok. do you have a problem with having any?", 
+        #     'i love to party. i love the sound of the waves.'], 
+        #     ["i don't talk to him much because i am so bad at it.", 
+        #     "i'm a country music fan, and i love country"]
+        #     ]
+        send_messages = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
+                         for interaction in send_messages]
+        
+        send_messages = [[_replace_all(self.dict.special_tokens, message) for message in interaction]
                          for interaction in send_messages]
 
         batch_messages = ['' for _ in range(len(send_messages[0]))]
@@ -1043,7 +1067,14 @@ class PSquareAgent(Agent):
 
         if self.use_cuda:
             xs = xs.cuda(cuda_device)
-        sorted_score = self.language_model.score_sentence(xs)
+        try:
+            sorted_score = self.language_model.score_sentence(xs)
+        except Exception as e:
+            print('Fuck psquare')
+            print('-' * 20)
+            print(self.send_messages)
+            print('-' * 20)
+            raise e
         # desorted ind
         desorted_ind = np.array(sort_ind).argsort()
         scores = sorted_score[desorted_ind]

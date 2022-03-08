@@ -1004,7 +1004,8 @@ class ReceiverEncoder(nn.Module):
             grid_mask = whole_mask.view(persona_shape[0], persona_shape[1], dialogue_shape[1], persona_shape[2]) \
                 .detach().cpu().numpy()
             # whole_mask = whole_mask.view(-1, dialogue_shape[1] * persona_shape[2])
-            one_minus_mask = (1.0 - whole_mask).byte()
+            # one_minus_mask = (1.0 - whole_mask).byte()
+            one_minus_mask = (1.0 - whole_mask).bool()
 
             # masked mean value
             replaced_vector = feature_map.masked_fill(one_minus_mask, 0.0)
