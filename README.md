@@ -87,7 +87,7 @@ We provide three files to train `Transmitter`, `Receiver` and `PSquare` (details
 
 ### Training Transmitter
 
-![transmitter_model](misc/transmitter_model.svg)
+![transmitter_model](misc/transmitter_model.svg)<br>
 在train_transmitter.py中设置gpt_type参数即可使用不同模型，可以使用baseline的gpt亦或者我们的gpt2和dialogpt 
 如需要使用我们数据集增强方法，则将task_name指定为'tasks.convai2transmitter.agents:BothOriginalTeacher'
 ```python
