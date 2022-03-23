@@ -88,9 +88,8 @@ We provide three files to train `Transmitter`, `Receiver` and `PSquare` (details
 ### Training Transmitter
 
 ![transmitter_model](misc/transmitter_model.svg)
-
-The transmitter is based OpenAI's GPT model. The default hyper-parameters are expected to reproduce our paper results (if not, please open an issue or contact me via email). Therefore, you could use the following command to train a transmitter. The script will automatically download the PersonaChat dataset into the `./data/ConvAI2` folder. Note that we use the `train_self_(original|revised).txt` to train Transmitter.
-
+在train_transmitter.py中设置gpt_type参数即可使用不同模型，可以使用baseline的gpt亦或者我们的gpt2和dialogpt 
+如需要使用我们数据集增强方法，则将task_name指定为'tasks.convai2transmitter.agents:BothOriginalTeacher'
 ```python
 python train_transmitter.py
 ```
@@ -132,7 +131,7 @@ python train_receiver.py
 ```
 
 ### Training PSquare
-
+#### note: in our model, we actually didn't use the reinforcement learning when we get sota!
 At first you should prepare the self-play datset using the following command:
 
 ```python
