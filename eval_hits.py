@@ -5,17 +5,17 @@ IS_ORIGINAL = True
 
 def setup_task():
     if IS_ORIGINAL:
-        task_name = 'tasks.convai2transmitter.agents:SelfOriginalTeacher'
+        task_name = 'tasks.convai2transmitter.agents:BothOriginalTeacher'
     else:
-        task_name = 'tasks.convai2transmitter.agents:SelfRevisedTeacher'
+        task_name = 'tasks.convai2transmitter.agents:BothRevisedTeacher'
     return task_name
 
 
 def setup_trained_weights():
     if IS_ORIGINAL:
-        weights_name = './tmp/psquare/psqaure_original.model'
+        weights_name = 'tmp/transmitter/selforiginal_dialogpt_gpt2dict/selforiginal_dialogpt_gpt2dict.model'
     else:
-        weights_name = './tmp/psquare/psqaure_revised.model'
+        weights_name = 'tmp/transmitter/bothrevised_gpt2/bothrevised_gpt2.model'
     return weights_name
 
 
@@ -26,7 +26,7 @@ def setup_args(parser=None):
         task=task_name,
         datatype='valid',
         hide_labels=False,
-        metrics='hits@1',
+        metrics='apcer,bpcer',
     )
     return parser
 
@@ -44,8 +44,9 @@ if __name__ == '__main__':
         model='agents.transmitter.transmitter:TransformerAgent',
         model_file=model_name,
         init_model_transmitter=model_name,
-        gpu=0,
-        batchsize=16,
+        gpt_type='dialogpt',
+        gpu=1,
+        batchsize=10,
         beam_size=1,
         rank_candidates=True,
         report_freq=0.0001,

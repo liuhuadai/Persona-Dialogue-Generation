@@ -14,10 +14,10 @@ from agents.transmitter.transmitter import ARCH_CHOICE
 from parlai.scripts.train_model import setup_args as setup_dict_args, TrainLoop
 
 # if is original, train model on original data; otherwise on revised data.
-IS_ORIGINAL = False
+IS_ORIGINAL = True
 
 TRANSMITTER_DIR = './tmp/transmitter'
-VERSION = "transmitter_revised"
+VERSION = "selforiginal_gpt2"
 
 
 def setup_task():
@@ -84,7 +84,7 @@ def setup_args():
         rank_candidates=False,
         # task='tasks.convai2transmitter.agents:SelfRevisedTeacher:no_cands',
         model='agents.transmitter.transmitter:TransformerAgent',
-        model_file='./tmp/transmitter/{}.model'.format(exp_name),
+        model_file='./tmp/transmitter/{}/{}.model'.format(exp_name,exp_name),
         dict_tokenizer='split',
         datatype='train',
         gpt_lr=6.25e-5,
@@ -108,6 +108,7 @@ def setup_args():
         encoder_bidirectional=False,
         encoder_hidden_size=encoder_hidden_size,
         decoder_hidden_size=decoder_hidden_size,
+        gpt_type='gpt2',
         smoothing=smoothing,
         lr=lr,
         dropout=dropout,
@@ -128,7 +129,7 @@ def setup_args():
         validation_metric_mode='min',
         validation_patience=10,
         log_every_n_secs=30,
-        gpu=0,
+        gpu=3,
         # logging configuration
         exp=exp_name,
         tensorboard_log=True,

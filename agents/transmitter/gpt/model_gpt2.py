@@ -5,24 +5,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import OpenAIGPTLMHeadModel, GPT2LMHeadModel
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
-class Gpt2SeqModel(nn.Module):
+
+class Gpt2SeqModel1(nn.Module):
     def __init__(self, opt, vocab_size, pad_idx, start_idx, end_idx, special_token_len, dict, longest_label=1,
                  length_penalty=1.0, diversity_groups=1, diversity_coef=0.2, annealing_topk=None, annealing=0, sample=False,
                  temperature=0.7):
         super().__init__()
         # original vocab size plus special vocab
-        self.vocab_size = vocab_size + 40478
-        self.token_type_dict = {}
-        # max is 30
-        for i in range(29):
-            self.token_type_dict['dis'+str(i)] = self.vocab_size + i
-        # pred for prediction turn embedding
-        self.token_type_dict['pred'] = self.vocab_size + 29
-        # the remaining 30 is the distance size
-        special_token_len += 30
-        self.vocab_size += 29
+        self.vocab_size = 50257
+        # self.token_type_dict = {}
+        # # max is 30
+        # for i in range(29):
+        #     self.token_type_dict['dis'+str(i)] = self.vocab_size + i
+        # # pred for prediction turn embedding
+        # self.token_type_dict['pred'] = self.vocab_size + 29
+        # # the remaining 30 is the distance size
+        # special_token_len += 30
+        # self.vocab_size += 29
         # print('vocab size:', self.vocab_size, special_token_len)
         # regard input and output as one sentence, given the input as context, generate the next sentence.
         gpt_type = opt.get('gpt_type', 'gpt')
@@ -30,21 +30,18 @@ class Gpt2SeqModel(nn.Module):
         if gpt_type == 'gpt':
             self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
         elif gpt_type == 'gpt2':
-            self.vocab_size += (50257 - 40478)
+            # self.vocab_size += (50257 - 40478)
             self.transformer_module = GPT2LMHeadModel.from_pretrained('gpt2')
-        elif gpt_type == 'dialogpt':
-            self.vocab_size += (50257 - 40478)
-            self.transformer_module = AutoModelForCausalLM.from_pretrained("repretrain_model/dialogpt.bin")
-        self.transformer_module.resize_token_embeddings(self.vocab_size)
+        # self.transformer_module.resize_token_embeddings(self.vocab_size)
         if self.training:
             self.transformer_module.train()
         else:
             self.transformer_module.eval()
         self.pad_idx = pad_idx
         self.start_idx = start_idx
-        self.end_idx = end_idx
+        # self.end_idx = end_idx
         self.register_buffer('start_tensor', torch.LongTensor([start_idx]))
-        self.register_buffer('pred_turn_tensor', torch.LongTensor([self.token_type_dict['pred']]))
+        # self.register_buffer('pred_turn_tensor', torch.LongTensor([self.token_type_dict['pred']]))
         # default beam equal to 1
         self.beam_size = opt.get('beam_size', 1)
         self.rank = opt.get('rank_candidates', False)
@@ -144,7 +141,7 @@ class Gpt2SeqModel(nn.Module):
                 predictions, hidden_states = self.greedy_decoding(batch_size, prior_context, prior_dis)
 
             positive_score = self.linear(hidden_states[:, -1, :])
-            # positive_score_1 = F.softmax(positive_score, dim=1)[:, 1]
+
         if self.training and sampling_cands is not None:
             sampling_seq = sampling_cands
             sampling_seq_len = src_seq_len + sampling_seq.ne(self.pad_idx).sum(dim=1, keepdim=True)

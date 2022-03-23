@@ -1025,6 +1025,7 @@ class PSquareAgent(Agent):
             print(self.send_messages)
             raise e
         # desorted ind
+        import ipdb
         desorted_ind = np.array(sort_ind).argsort()
         scores = sorted_score[desorted_ind]
         # baseline

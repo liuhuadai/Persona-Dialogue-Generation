@@ -14,7 +14,7 @@ from scripts.train_model_selfplay import setup_args as setup_args_dict, TrainLoo
 #  within less than 24GB memory.
 os.environ['CUDA_VISIBLE_DEVICES'] = '0,1'
 
-IS_ORIGINAL = False
+IS_ORIGINAL = True
 
 
 def set_seed(seed=1):
@@ -34,11 +34,11 @@ def setup_args():
         exp_eval_task = 'tasks.convai2transmitter.agents:SelfOriginalTeacher:no_cands'
     else:
         receiver_basic = 'receiver_original'
-        transmitter_basic = 'transmitter_original'
+        transmitter_basic = 'transmitter_original_gpt2'
         exp_task = 'tasks.convai2.agents:RevisedTeacher,tasks.convai2.agents:RevisedPersonaTeacher'
         exp_eval_task = 'tasks.convai2transmitter.agents:SelfRevisedTeacher:no_cands'
 
-    exp_name = 'psquare_bot'
+    exp_name = 'psquare_bot_1'
     validation_max = -1
     train_display = 300
 
@@ -64,6 +64,7 @@ def setup_args():
         model_file='./tmp/psquare/{}.model'.format(exp_name),
         lr=1e-6,
         gpt_lr=1e-6,
+        gpt_type = 'gpt2',
         # world sample configuration
         top_k=20,
         beam_size=2,

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from agents.transmitter.transmitter import Gpt2SeqModel
 import numpy as np
 from transformers import OpenAIGPTLMHeadModel, GPT2LMHeadModel
-
+from transformers import AutoModelForCausalLM
 
 def _length_penalty(sequence_lengths):
     """https://arxiv.org/abs/1609.08144"""
@@ -20,6 +20,8 @@ class LanguageModel(object):
             self.transformer_module = OpenAIGPTLMHeadModel.from_pretrained('openai-gpt')
         elif gpt_type == 'gpt2':
             self.transformer_module = GPT2LMHeadModel.from_pretrained('gpt2')
+        elif gpt_type == 'dialogpt':
+            self.transformer_module = AutoModelForCausalLM.from_pretrained("microsoft/DialoGPT-small")
         else:
             raise ValueError('gpt_type should be gpt or gpt2')
         self.transformer_module.eval()

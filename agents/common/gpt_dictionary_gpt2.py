@@ -12,7 +12,6 @@ except ImportError:
                       'pip install pytorch-pretrained-bert')
 from .dict_helper import SpecialToken
 import os
-from transformers import  AutoTokenizer
 
 
 def recover_bpe_encoding(bpe_tokens):
@@ -30,7 +29,7 @@ def recover_bpe_encoding(bpe_tokens):
     return output_tokens
 
 
-class GPTDictionaryAgent(DictionaryAgent):
+class GPTDictionaryAgent1(DictionaryAgent):
     """ Allow to use the Torch Agent with the wordpiece dictionary of Hugging Face.
     """
     default_lang = 'english'
@@ -49,14 +48,9 @@ class GPTDictionaryAgent(DictionaryAgent):
         super().__init__(opt)
         # initialize from voab path
         cache_vocab_dir = os.path.join(opt['datapath'], 'models', 'gpt_models')
-        self.special_tokens = [SpecialToken.talk_1_start,
-                               SpecialToken.talk_1_end,
-                               SpecialToken.persona_start,
-                               SpecialToken.persona_end,
-                               SpecialToken.no_fact,
+        self.special_tokens = [
                                SpecialToken.start,
-                               SpecialToken.end,
-                               SpecialToken.slice_sym]
+                               SpecialToken.end]
 
         # add special token after the pre-trained bpe text
         gpt_type = opt.get('gpt_type', 'gpt')
@@ -68,21 +62,18 @@ class GPTDictionaryAgent(DictionaryAgent):
             self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2',
                                                             cache_dir=cache_vocab_dir)
             # self.default_tok = 'gpt2'
-        elif gpt_type == 'dialogpt':
-            self.tokenizer = GPT2Tokenizer.from_pretrained('gpt2',
-                                                            cache_dir=cache_vocab_dir)
-            # self.tokenizer = AutoTokenizer.from_pretrained("microsoft/DialoGPT-small")
         else:
             raise ValueError('gpt_type should be gpt or gpt2')
         self.tokenizer.add_tokens(self.special_tokens)
+
         self.start_token = self.default_start
         self.end_token = self.default_end
         self.null_token = self.default_null
 
-        # <unk> already in the dictionary
+        # # <unk> already in the dictionary
         self.start_idx = self.tokenizer.convert_tokens_to_ids([SpecialToken.start])[0]
-        # <end> is used to split a long text into different parts, which is necessary for us
-        # to differentiate persona & history only passing the observation function for one time
+        # # <end> is used to split a long text into different parts, which is necessary for us
+        # # to differentiate persona & history only passing the observation function for one time
         self.end_idx = self.tokenizer.convert_tokens_to_ids([SpecialToken.end])[0]
         self.pad_idx = self.tokenizer.convert_tokens_to_ids([SpecialToken.pad])[0]  # should be 0
         # update for default tokenizer vocabulary
@@ -91,7 +82,7 @@ class GPTDictionaryAgent(DictionaryAgent):
         self.ind2tok.clear()
 
         # set tok2ind for special tokens
-        for special_token in self.special_tokens + [self.start_token, self.end_token, self.null_token]:
+        for special_token in [self.start_token, self.end_token, self.null_token]:
             token_id = self.tokenizer.convert_tokens_to_ids([special_token])[0]
             self.tok2ind[special_token] = token_id
             self.ind2tok[token_id] = special_token
@@ -107,7 +98,7 @@ class GPTDictionaryAgent(DictionaryAgent):
         else:
             idxs = list(tensor_list)
         # filter unk ids
-        max_vocab_size = 50257 + len(self.special_tokens)
+        max_vocab_size = len(self.tokenizer.decoder) + len(self.special_tokens)
         idxs = [self.pad_idx if idx >= max_vocab_size else idx for idx in idxs]
         toks = self.tokenizer.convert_ids_to_tokens(idxs)
         if recover_bpe:

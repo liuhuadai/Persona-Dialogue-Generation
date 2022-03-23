@@ -926,8 +926,17 @@ class FbDialogTeacher(DialogTeacher):
         shared = super().share()
         shared['cands'] = self.cands
         return shared
+ 
+    def random_delete_cands(self):
+        import random
+        delete_num = random.randint(0,len(self.cands)-1)
+        for i in range(delete_num):
+            random_num = random.randint(0,len(self.cands)-1)
+            self.cands = self.cands.pop(random_num)
+
 
     def label_candidates(self):
+        
         return self.cands
 
     def load_cands(self, path):

@@ -24,9 +24,9 @@ from agents.transmitter.utils import SharedTable
 from agents.transmitter.utils import modelzoo_path
 from agents.transmitter.gpt.loss import LabelSmoothingLoss, TokenCrossEntropyLoss
 from agents.transmitter.seq2seq.model import Seq2seqModel
-from .gpt.model import Gpt2SeqModel
+from .gpt.model_gpt2 import Gpt2SeqModel1
 from .gpt.optim import GPTOptimizer
-from agents.common.gpt_dictionary import GPTDictionaryAgent
+from agents.common.gpt_dictionary_gpt2 import GPTDictionaryAgent1
 
 # lstm, transformer, gpt2
 ARCH_CHOICE = 'gpt'
@@ -103,7 +103,7 @@ def gpt2_args(agent_args):
     agent_args.add_argument('--optimizer_step', type=int, default=5000)
 
 
-class TransformerAgent(Agent):
+class TransformerAgent1(Agent):
     """Agent which takes an input sequence and produces an output sequence.
 
     This model supports encoding the input and decoding the output via one of
@@ -137,7 +137,7 @@ class TransformerAgent(Agent):
     @staticmethod
     def dictionary_class():
         if ARCH_CHOICE == 'gpt':
-            return GPTDictionaryAgent
+            return GPTDictionaryAgent1
         elif ARCH_CHOICE == 'lstm':
             return DictionaryAgent
         else:
@@ -196,14 +196,13 @@ class TransformerAgent(Agent):
         agent_args.add_argument('--encoder_turn_dim', type=int, default=0,
                                 help='encoder turn dimension')
 
-        agent_args.add_argument('--use-persona-token', type=bool, default=True,
+        agent_args.add_argument('--use-persona-token', type=bool, default=False,
                                 help='add special tokens at the start and end of persona')
-        agent_args.add_argument('--use-talk-token', type=bool, default=True,
+        agent_args.add_argument('--use-talk-token', type=bool, default=False,
                                 help='add special tokens at the start and end of query')
         agent_args.add_argument('--persona-append-strategy', default='concat', choices=['concat', 'none', 'select'],
                                 help='add special tokens at the start and end of query')
-        agent_args.add_argument('--wer-threshold', default='concat', choices=['concat', 'none', 'select'],
-                                help='add special tokens at the start and end of query')
+
         agent_args.add_argument('--encode_max_seq_len', type=int, default=184)
         agent_args.add_argument('--decode_max_seq_len', type=int, default=32)
 
@@ -242,7 +241,7 @@ class TransformerAgent(Agent):
         agent_args.add_argument('--dict_file', default='../../tmp/dict/convai2_self_seq2seq_model.dict')
         agent_args.add_argument('--dict_lower', type=bool, default=True)
 
-        TransformerAgent.dictionary_class().add_cmdline_args(argparser)
+        TransformerAgent1.dictionary_class().add_cmdline_args(argparser)
         return agent_args
 
     def __init__(self, opt, shared=None):
@@ -254,7 +253,7 @@ class TransformerAgent(Agent):
         self.encode_max_seq_len = opt['encode_max_seq_len'] if opt['encode_max_seq_len'] > 0 else None
         self.decode_max_seq_len = opt['decode_max_seq_len'] if opt['decode_max_seq_len'] > 0 else None
 
-        self.metrics = {'loss': 0.0, 'num_tokens': 0, 'correct_tokens': 0, 'total_skipped_batches': 0, 'correct_pred': 0, 'gt_0': 0, 'gt_1': 0, 'fp': 0, 'fn': 0}
+        self.metrics = {'loss': 0.0, 'num_tokens': 0, 'correct_tokens': 0, 'total_skipped_batches': 0, 'correct_pred': 0, 'pred_count': 0}
 
         self.history = {}
         # batch share the same persona information
@@ -342,8 +341,8 @@ class TransformerAgent(Agent):
                                           end_idx=self.END_IDX,
                                           longest_label=states.get('longest_label', 1))
             elif ARCH_CHOICE == 'gpt':
-                assert isinstance(self.dict, GPTDictionaryAgent)
-                self.model = Gpt2SeqModel(opt=opt,
+                assert isinstance(self.dict, GPTDictionaryAgent1)
+                self.model = Gpt2SeqModel1(opt=opt,
                                           vocab_size=len(self.dict),
                                           pad_idx=self.NULL_IDX,
                                           start_idx=self.START_IDX,
@@ -426,8 +425,7 @@ class TransformerAgent(Agent):
         if opt['smoothing'] > 0.0:
             vs = {
                 'gpt': 40516,
-                'gpt2': 50295,
-                'dialogpt': 50295
+                'gpt2': 50257,
             }.get(opt.get('gpt_type', 'gpt'), None)
             self.criterion = LabelSmoothingLoss(vocabulary_size=vs,
                                                 label_smoothing=opt['smoothing'],
@@ -450,7 +448,7 @@ class TransformerAgent(Agent):
 
             # set up optimizer
             lr = opt['lr']
-            optim_class = TransformerAgent.OPTIM_OPTS[opt['optimizer']]
+            optim_class = TransformerAgent1.OPTIM_OPTS[opt['optimizer']]
             if ARCH_CHOICE == 'lstm':
                 kwargs = {'lr': lr}
                 if opt.get('momentum') > 0 and opt['optimizer'] in ['sgd', 'rmsprop']:
@@ -582,10 +580,6 @@ class TransformerAgent(Agent):
         if num_tok > 0:
             if self.metrics['correct_tokens'] > 0:
                 m['token_acc'] = self.metrics['correct_tokens'] / num_tok
-            if self.metrics['gt_0'] > 0:
-                m['apcer'] = self.metrics['fp'] / self.metrics['gt_0']
-            if self.metrics['gt_1'] > 0:
-                m['bpcer'] = self.metrics['fn'] / self.metrics['gt_1']
             m['loss'] = self.metrics['loss'] / num_tok
             if self.metrics['pred_count'] > 0:
                 m['pred'] = self.metrics['correct_pred'] / self.metrics['pred_count']
@@ -701,8 +695,7 @@ class TransformerAgent(Agent):
                 positive_pred = torch.argmax(positive_score, dim=1)
                 negative_pred = torch.argmax(negative_score, dim=1)
                 rank_correct = positive_pred.ne(0).sum() + negative_pred.ne(1).sum()
-                label = ['positive' if i else 'negetive' for i in  positive_pred ]
-                print(f'the label is {label}')
+
                 y_ne = tgt_seq.ne(self.NULL_IDX)
                 target_tokens = y_ne.long().sum().item()
                 correct = ((tgt_seq == _preds) * y_ne).sum().item()
@@ -739,12 +732,8 @@ class TransformerAgent(Agent):
                                      rank_during_training=cands is not None,
                                      cands=cands,
                                      valid_cands=valid_cands)
-            predictions, cand_scores, cand_preds = out[0], out[3], out[2]
-            positive_score, negative_score = out[-2], out[-1]
-            positive_pred = torch.softmax(positive_score, dim=1)[:,1]
-            positive_pred = positive_pred.view(-1) < self.wer_threshold
-            negative_pred = (cand_scores.view(-1) >= self.wer_threshold)
-            # negative_pred = torch.argmax(negative_score, dim=1)
+            predictions, cand_preds = out[0], out[2]
+
             if tgt_seq is not None:
                 # calculate loss on targets
                 out = self.model.forward(src_seq=src_seq,
@@ -753,6 +742,7 @@ class TransformerAgent(Agent):
                                          tgt_seq=tgt_seq,
                                          tgt_seq_turn=tgt_seq_turn,
                                          cands=cands,
+                                         sampling=True,
                                          valid_cands=valid_cands)
                 scores = out[1]
                 # just used to calculate perplexity
@@ -762,10 +752,7 @@ class TransformerAgent(Agent):
                 target_tokens = tgt_seq.ne(self.NULL_IDX).long().sum().item()
                 self.metrics['loss'] += loss.item()
                 self.metrics['num_tokens'] += target_tokens
-                self.metrics['gt_1'] += positive_pred.shape[0]
-                self.metrics['gt_0'] += negative_pred.shape[0]
-                self.metrics['fn'] += torch.sum(positive_pred).item()
-                self.metrics['fp'] +=torch.sum(negative_pred).item()
+
         return predictions, cand_preds
 
     def vectorize(self, observations):

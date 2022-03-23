@@ -13,7 +13,7 @@ def setup_task():
 
 def setup_trained_weights():
     if IS_ORIGINAL:
-        weights_name = './tmp/psquare/psqaure_original.model'
+        weights_name = 'tmp/transmitter/selforiginal_dialogpt/selforiginal_dialogpt.model'
     else:
         weights_name = './tmp/psquare/psqaure_revised.model'
     return weights_name
@@ -43,7 +43,8 @@ if __name__ == '__main__':
     parser.set_params(
         model='agents.transmitter.transmitter:TransformerAgent',
         model_file=model_name,
-        gpu=0,
+        gpu=1,
+        gpt_type='dialogpt',
         batchsize=10,
         beam_size=2
     )

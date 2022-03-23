@@ -266,6 +266,7 @@ class SelfPlayWorld(DialogPartnerWorld):
             if not agents[0].is_first_speaker:
                 information_penalty_a, information_penalty_b = information_penalty_b, information_penalty_a
             # as one score or multi score
+            import ipdb
             reward_a_list = 0.1 * agent_a_coherent_reward + 0.5 * agent_a_persona_reward + 0.5 * agent_a_language_reward - 0.1 * information_penalty_a
             reward_b_list = 0.1 * agent_b_coherent_reward + 0.5 * agent_b_persona_reward + 0.5 * agent_b_language_reward - 0.1 * information_penalty_b
 
