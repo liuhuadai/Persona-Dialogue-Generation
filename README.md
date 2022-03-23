@@ -154,15 +154,13 @@ self.language_model.cuda('cuda:1')
 ## Trained Model Weights
 
 We also provide trained PSquare weights for reproducing our experimental results in the paper.
-
-- Trained model weights under the Original setting: https://www.dropbox.com/s/ozw9xmfv4f0tud9/psqaure_original.zip?dl=0
-- Trained model weights under the Revised setting: https://www.dropbox.com/s/bbvamaj9r019wsw/psqaure_revised.zip?dl=0
-
-Please create a directory `./tmp/psquare`, and unzip the model zipped files into the directory as:
+-Trained refined model weights under the Original setting: https://www.dropbox.com/s/ts80u4shh5mksje/repretrain_model.zip?dl=0
+- Trained model weights under the Original setting: https://www.dropbox.com/s/w9lft4hc8wogsyo/model.zip?dl=0
+Please create a directory `./tmp/model`, and unzip the model zipped files into the directory like :
 
 ```bash
 | -- tmp
-    | -- psquare
+    | -- model
         | -- psqaure_original.model
         | -- psqaure_original.model.opt
         | -- psqaure_original.model.best_valid
